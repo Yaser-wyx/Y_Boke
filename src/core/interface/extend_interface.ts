@@ -4,7 +4,7 @@
  */
 
 export interface ExtendInterface {
-    plugins: Record<string, object> //所有注册的功能插件
+    readonly plugins: Record<string, object> //所有注册的功能插件
 
     register(obj: object): void //注册功能插件
 

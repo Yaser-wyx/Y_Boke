@@ -10,7 +10,7 @@ import * as chokidar from "chokidar"
 import * as fs from "fs";
 
 export class WatcherExtend extends FSWatcher implements ExtendInterface {
-    plugins: Record<string, object> = {};
+    readonly plugins: Record<string, { fsWatcher: FSWatcher, customWatcher: WatcherInterface }> = {};
 
     get(name: string): object {
         return this.plugins[name];
@@ -47,6 +47,7 @@ export class WatcherExtend extends FSWatcher implements ExtendInterface {
                         return true
                     }
                 }
+
                 //2. 若没有匹配的文件后缀，再匹配文件名
                 if (hasTargetFile) {
                     //匹配文件名
@@ -62,7 +63,8 @@ export class WatcherExtend extends FSWatcher implements ExtendInterface {
             }
             return false;
         }
-        chokidar.watch(watcher.watchPath, watcher.watchOption).on("all",
+        let fsWatcher = chokidar.watch(watcher.watchPath, watcher.watchOption)
+        fsWatcher.on("all",
             (eventName, path, stats) => {
                 if (watcher.watchEvent !== 'all' && watcher.watchEvent !== eventName) {
                     //不是all，同时当前事件也不是要接受的事件
@@ -72,23 +74,32 @@ export class WatcherExtend extends FSWatcher implements ExtendInterface {
                 if (fs.statSync(watcher.watchPath).isFile()) {
                     //如果要监听的路径是一个文件，则判断文件路径是否一致
                     if (watcher.watchPath === path) {
-                        //一致则调用
+                        //文件路径一致则调用
                         watcher.watchAction(eventName, path, stats)
                     }
                 } else if (fs.statSync(watcher.watchPath).isDirectory()) {
                     //要监听的是一个目录
-                    if (hasTargetFile||hasTargetFileSuffix){
-                        if (testPath(path)){
+                    if (hasTargetFile || hasTargetFileSuffix) {
+                        if (testPath(path)) {
                             //通过测试
                             watcher.watchAction(eventName, path, stats)
                         }
-                    }else{
+                    } else {
                         //没有目标文件要求
                         watcher.watchAction(eventName, path, stats)
                     }
                 }
-
             })
+        this.plugins[watcher.name] = {fsWatcher: fsWatcher, customWatcher: watcher};
+    }
+
+    stopWatch(name: string): void {
+        //停止监听
+        const watcher = this.plugins[name]
+        watcher.fsWatcher.close().then(() => {
+            //移除监听器
+            delete this.plugins[name]
+        });
 
     }
 
