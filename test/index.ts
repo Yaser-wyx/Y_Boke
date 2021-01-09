@@ -28,5 +28,13 @@ function watch() {
 
 // initTest()
 
-watch()
+// watch()
+import {sep,parse,dirname,resolve} from "path"
 
+const array = ["test1.js", "test1.html", "test1.txt"]
+const regExpStr = "^("+ array.reduce((previousValue, currentValue) => {
+    return previousValue+"|"+currentValue
+})+")$"
+
+
+console.log(resolve("D:\\Y_Boke\\yarn.lock\n"))
